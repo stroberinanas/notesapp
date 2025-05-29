@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Edit Notes</title>
+</head>
+
+<body>
+  <div class="container">
+    <center>
+      <h1>Edit Your Notes</h1>
+    </center>
+    <form id="editForm">
+      <input type="hidden" id="noteId" />
+
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title" required />
+      <br />
+
+      <label for="category">Category:</label>
+      <input type="text" id="category" name="category" required />
+      <br />
+
+      <label for="note">Notes:</label>
+      <textarea id="note" name="note" required></textarea>
+      <br />
+
+      <button type="submit" class="button edit">Save Changes</button>
+      <button type="button" onclick="window.location.href='notes.html'" class="button back">
+        Back
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // const BASE_URL = "http://localhost:5000/api"; // Ganti dengan URL backend-mu
+    const BASE_URL = "https://notes-be-1013759214686.us-central1.run.app";
+
+    async function refreshAccessToken() {
+      try {
+        const response = await fetch(`${BASE_URL}/token`, {
+          credentials: "include",
+        });
+        const result = await response.json();
+        if (result.accessToken) {
+          localStorage.setItem("accessToken", result.accessToken);
+          return result.accessToken;
+        }
+      } catch { }
+      localStorage.removeItem("accessToken");
+      return null;
+    }
+
+    async function fetchNoteDetail() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const noteId = urlParams.get("id");
+
+      if (!noteId) {
+        alert("Note ID is missing!");
+        window.location.href = "index.html";
+        return;
+      }
+
+      document.getElementById("noteId").value = noteId;
+
+      try {
+        let token = localStorage.getItem("accessToken");
+        if (!token) {
+          alert("Silakan login terlebih dahulu.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        let response = await fetch(`${BASE_URL}/notes/${noteId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          token = await refreshAccessToken();
+          if (!token) {
+            alert("Session expired, silakan login ulang.");
+            window.location.href = "index.html";
+            return;
+          }
+          response = await fetch(`${BASE_URL}/notes/${noteId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            credentials: "include",
+          });
+        }
+
+        if (!response.ok) throw new Error("Failed to fetch data");
+
+        const note = await response.json();
+
+        // Isi form dengan data dari database (pastikan properti yang benar)
+        document.getElementById("title").value = note.title;
+        document.getElementById("category").value = note.category;
+        document.getElementById("note").value = note.note;
+      } catch (error) {
+        console.error("Error fetching note details:", error);
+        alert("Failed to load note details!");
+      }
+    }
+
+    document
+      .getElementById("editForm")
+      .addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        const noteId = document.getElementById("noteId").value;
+        const title = document.getElementById("title").value;
+        const category = document.getElementById("category").value;
+        const note = document.getElementById("note").value;
+
+        try {
+          let token = localStorage.getItem("accessToken");
+          if (!token) {
+            alert("Silakan login terlebih dahulu.");
+            window.location.href = "index.html";
+            return;
+          }
+
+          // let response = await fetch(`${BASE_URL}/edit-notes/${noteId}`, {
+          let response = await fetch(`${BASE_URL}/notes/${noteId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+            body: JSON.stringify({ title, category, note }),
+          });
+
+          if (response.status === 401 || response.status === 403) {
+            token = await refreshAccessToken();
+            if (!token) {
+              alert("Session expired, silakan login ulang.");
+              window.location.href = "index.html";
+              return;
+            }
+            // response = await fetch(`${BASE_URL}/edit-notes/${noteId}`, {
+            response = await fetch(`${BASE_URL}/notes/${noteId}`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              credentials: "include",
+              body: JSON.stringify({ title, category, note }),
+            });
+          }
+
+          if (!response.ok) throw new Error("Failed to update note");
+
+          alert("Note updated successfully!");
+          window.location.href = "notes.html"; // Redirect ke halaman daftar notes
+        } catch (error) {
+          console.error("Error updating note:", error);
+          alert("Failed to update note!");
+        }
+      });
+
+    fetchNoteDetail();
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,131 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* height: 100vh; */
+    padding: 20px;
+    margin: 0;
+}
+
+.container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    position: sticky;
+    top: 0;
+    background-color: white;
+    padding-bottom: 10px;
+    z-index: 1;
+    border-bottom: 1px solid #ddd;
+}
+
+.header h1 {
+    font-size: 24px;
+    margin: 0;
+}
+
+.note {
+    background: #e0f7fa;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.note:last-child {
+    margin-bottom: 0;
+}
+
+#notes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    /* max-width: 400px; */
+}
+
+.note-date {
+    font-weight: bold;
+}
+
+
+input,
+textarea {
+    border: 2px solid #b23b3b;
+    padding: 8px;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+textarea {
+    height: 100px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+}
+
+.button {
+    background-color: #00bcd4;
+    color: white;
+    border: none;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 8px;
+    width: 100%;
+}
+
+.button:hover {
+    background-color: #0097a7;
+    opacity: 0.9;
+}
+
+.button.add {
+    background-color: #690B22;
+    margin-bottom: 5px;
+}
+
+button.detail {
+    background-color: #1E3D31;
+    margin-bottom: 5px;
+}
+
+button.edit {
+    background-color: #ffbb56;
+    margin-bottom: 5px;
+}
+
+button.delete {
+    background-color: #E07A5F;
+    /* Merah Tua untuk Delete */
+}
+
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0 20px 0;
+    border: none;
+    border-radius: 5px;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+    outline: none;
+    border: 2px solid #E07A5F;
+    /* Coklat Muda saat fokus */
+}

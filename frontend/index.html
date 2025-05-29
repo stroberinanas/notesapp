@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login & Register</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background-color: #f2f2f2;
+    }
+
+    h3 {
+      margin-bottom: 10px;
+    }
+
+    form {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .toggle {
+      margin-top: 10px;
+      color: #007bff;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Login Form -->
+  <form id="loginForm">
+    <h3>Login</h3>
+    <label>Email:</label>
+    <input type="email" id="loginEmail" required />
+    <label>Password:</label>
+    <input type="password" id="loginPassword" required />
+    <button type="submit">Login</button>
+    <div class="toggle" onclick="toggleForms()">Belum punya akun? Register</div>
+  </form>
+
+  <!-- Register Form -->
+  <form id="registerForm" class="hidden">
+    <h3>Register</h3>
+    <label>Name:</label>
+    <input type="text" id="registerName" required />
+    <label>Email:</label>
+    <input type="email" id="registerEmail" required />
+    <label>Password:</label>
+    <input type="password" id="registerPassword" required />
+    <button type="submit">Register</button>
+    <div class="toggle" onclick="toggleForms()">Sudah punya akun? Login</div>
+  </form>
+
+  <script>
+    // const BASE = "http://localhost:5000/api";
+    const BASE_URL = "https://notes-be-1013759214686.us-central1.run.app";
+
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+
+    function toggleForms() {
+      loginForm.classList.toggle("hidden");
+      registerForm.classList.toggle("hidden");
+    }
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = loginEmail.value;
+      const password = loginPassword.value;
+      const res = await fetch(`${BASE}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
+      const j = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("accessToken", j.accessToken);
+
+        try {
+          const decoded = jwt_decode(j.accessToken);
+          if (decoded && decoded.id) {
+            localStorage.setItem("userId", decoded.id);
+          } else {
+            localStorage.setItem("userId", null);
+          }
+        } catch (error) {
+          console.warn("Gagal decode accessToken", error);
+          localStorage.setItem("userId", null);
+        }
+
+        location.href = "notes.html";
+      } else {
+        alert(j.message);
+      }
+    });
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = registerName.value;
+      const email = registerEmail.value;
+      const password = registerPassword.value;
+      const res = await fetch(`${BASE}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const j = await res.json();
+      if (res.ok) {
+        alert("Registrasi berhasil, silakan login");
+        toggleForms();
+      } else alert(j.message);
+    });
+  </script>
+</body>
+
+</html>

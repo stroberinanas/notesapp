@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Notes</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>My Notes</h1>
+      <button class="button" onclick="window.location.href='add-data.html'">
+        + Add
+      </button>
+      <button id="profileBtn" class="button">Profile</button>
+      <button id="logoutBtn" class="button" style="background: #e07a5f; color: white; margin-left: 10px">
+        Logout
+      </button>
+    </div>
+    <div id="notes-container"></div>
+  </div>
+
+  <script>
+    // const BASE_URL = "http://localhost:5000/api";
+    const BASE_URL = "https://notes-be-1013759214686.us-central1.run.app";
+
+    // Redirect ke detail profile dengan userId dari localStorage
+    document.getElementById("profileBtn").addEventListener("click", () => {
+      const userId = localStorage.getItem("userId");
+      console.log("Profile button clicked. userId =", userId); // Debug
+      if (!userId) {
+        alert("User belum login atau session habis.");
+        window.location.href = "index.html";
+        return;
+      }
+      window.location.href = `detail-profile.html?id=${userId}`;
+    });
+
+    // Fungsi fetchNotes dan lainnya tetap sama
+    async function fetchNotes() {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+          alert("Silakan login terlebih dahulu.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        let response = await fetch(`${BASE_URL}/notes`, {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          const refreshed = await refreshAccessToken();
+          if (refreshed) return fetchNotes();
+          else {
+            alert("Session expired. Silakan login ulang.");
+            window.location.href = "index.html";
+            return;
+          }
+        }
+
+        const data = await response.json();
+        renderNotes(data);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      }
+    }
+
+    // Implementasi refreshAccessToken, renderNotes, deleteNote, logout sama seperti sebelumnya
+    async function refreshAccessToken() {
+      try {
+        const response = await fetch(`${BASE_URL}/token`, {
+          credentials: "include",
+        });
+        const result = await response.json();
+        if (result.accessToken) {
+          localStorage.setItem("accessToken", result.accessToken);
+          return true;
+        }
+      } catch { }
+      localStorage.removeItem("accessToken");
+      return false;
+    }
+
+    function renderNotes(data) {
+      const container = document.getElementById("notes-container");
+      container.innerHTML = "";
+      if (!data.length) {
+        container.innerHTML = "<p>Tidak ada catatan.</p>";
+        return;
+      }
+      data.forEach((note) => {
+        const noteElement = document.createElement("div");
+        noteElement.classList.add("note");
+        noteElement.innerHTML = `
+          <div class="note-date"><strong>${note.title}</strong></div>
+          <p style="font-size:12px; color:gray;">${note.createdAt ? new Date(note.createdAt).toLocaleString() : ""
+          }</p>
+          <button onclick="window.location.href='detail-data.html?id=${note.id
+          }'" class="button detail">Detail</button>
+          <button onclick="window.location.href='edit-data.html?id=${note.id
+          }'" class="button edit">Edit</button>
+          <button onclick="deleteNote(${note.id
+          })" class="button delete">Delete</button>
+        `;
+        container.appendChild(noteElement);
+      });
+    }
+
+    async function deleteNote(id) {
+      if (!confirm("Are you sure you want to delete this note?")) return;
+      try {
+        const token = localStorage.getItem("accessToken");
+        let response = await fetch(`${BASE_URL}/notes/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          const refreshed = await refreshAccessToken();
+          if (refreshed) return deleteNote(id);
+          else {
+            alert("Session expired. Silakan login ulang.");
+            window.location.href = "index.html";
+            return;
+          }
+        }
+
+        fetchNotes();
+      } catch (error) {
+        console.error("Error deleting note:", error);
+      }
+    }
+
+    async function logout() {
+      await fetch(`${BASE_URL}/logout`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("userId"); // Hapus juga userId saat logout
+      window.location.href = "index.html";
+    }
+
+    document.getElementById("logoutBtn").onclick = logout;
+
+    // Auto load notes saat halaman dibuka
+    fetchNotes();
+  </script>
+</body>
+
+</html>

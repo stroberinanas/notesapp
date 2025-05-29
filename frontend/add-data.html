@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Add Notes</title>
+</head>
+
+<body>
+  <div class="container">
+    <center>
+      <h1>Add Your Notes</h1>
+    </center>
+    <form id="addForm">
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title" required />
+      <br />
+
+      <label for="category">Category:</label>
+      <input type="text" id="category" name="category" required />
+      <br />
+
+      <label for="note">Notes:</label>
+      <textarea id="note" name="note" required></textarea>
+      <br />
+
+      <button type="submit" class="button add">Add Now</button>
+      <button type="button" onclick="window.location.href='notes.html'" class="button back">Back</button>
+    </form>
+  </div>
+
+  <script>
+    // const BASE_URL = "http://localhost:5000/api"; // Ganti dengan URL backend-mu
+    const BASE_URL = "https://notes-be-1013759214686.us-central1.run.app";
+
+    // Fungsi refresh access token jika expired
+    async function refreshAccessToken() {
+      try {
+        const response = await fetch(`${BASE_URL}/token`, {
+          credentials: "include"
+        });
+        const result = await response.json();
+        if (result.accessToken) {
+          localStorage.setItem("accessToken", result.accessToken);
+          return result.accessToken;
+        }
+      } catch (e) {
+        // gagal refresh
+      }
+      localStorage.removeItem("accessToken");
+      return null;
+    }
+
+    // Submit handler form tambah note
+    document.getElementById("addForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const title = document.getElementById("title").value.trim();
+      const category = document.getElementById("category").value.trim();
+      const note = document.getElementById("note").value.trim();
+
+      if (!title || !category || !note) {
+        alert("Semua field wajib diisi!");
+        return;
+      }
+
+      try {
+        let token = localStorage.getItem("accessToken");
+        if (!token) {
+          alert("Silakan login terlebih dahulu.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Kirim request tambah note
+        let response = await fetch(`${BASE_URL}/notes`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          credentials: "include",
+          body: JSON.stringify({ title, category, note })
+        });
+
+        // Jika unauthorized, coba refresh token dan retry
+        if (response.status === 401 || response.status === 403) {
+          token = await refreshAccessToken();
+          if (!token) {
+            alert("Session expired. Silakan login ulang.");
+            window.location.href = "index.html";
+            return;
+          }
+          response = await fetch(`${BASE_URL}/notes`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            credentials: "include",
+            body: JSON.stringify({ title, category, note })
+          });
+        }
+
+        if (!response.ok) {
+          const errMsg = await response.text();
+          throw new Error(errMsg || "Failed to add note");
+        }
+
+        alert("Note added successfully!");
+        window.location.href = "notes.html"; // Redirect ke daftar notes setelah berhasil tambah
+
+      } catch (error) {
+        console.error("Error adding note:", error);
+        alert("Failed to add note!");
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Detail Notes</title>
+</head>
+
+<body>
+    <div class="container">
+        <center>
+            <h1>Detail Notes</h1>
+        </center>
+
+        <div class="form-group">
+            <label for="title"><strong>Title:</strong></label>
+            <input type="text" id="title" name="title" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="category"><strong>Category:</strong></label>
+            <input type="text" id="category" name="category" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="notes"><strong>Notes:</strong></label>
+            <textarea id="notes" name="notes" readonly></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="createdAt"><strong>Created At:</strong></label>
+            <input type="text" id="createdAt" readonly>
+        </div>
+
+        <div class="form-group">
+            <label for="updatedAt"><strong>Last Update:</strong></label>
+            <input type="text" id="updatedAt" readonly>
+        </div>
+
+        <button onclick="window.location.href='notes.html'" class="button back">Back</button>
+    </div>
+
+    <script>
+        // const BASE_URL = "http://localhost:5000/api";
+        const BASE_URL = "https://notes-be-1013759214686.us-central1.run.app";
+
+        async function fetchNoteDetail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const noteId = urlParams.get("id");
+
+            if (!noteId) {
+                alert("Note ID is missing!");
+                window.location.href = "index.html";
+                return;
+            }
+
+            try {
+                let token = localStorage.getItem("accessToken");
+                if (!token) {
+                    alert("Silakan login terlebih dahulu.");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                let response = await fetch(`${BASE_URL}/notes/${noteId}`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    credentials: "include"
+                });
+
+                // Jika token expired, coba refresh token dan ulangi
+                if (response.status === 401 || response.status === 403) {
+                    const refreshResponse = await fetch(`${BASE_URL}/token`, { credentials: "include" });
+                    const refreshResult = await refreshResponse.json();
+
+                    if (!refreshResult.accessToken) {
+                        alert("Session expired, silakan login ulang.");
+                        window.location.href = "index.html";
+                        return;
+                    }
+
+                    localStorage.setItem("accessToken", refreshResult.accessToken);
+                    token = refreshResult.accessToken;
+
+                    // Retry fetch detail note
+                    response = await fetch(`${BASE_URL}/notes/${noteId}`, {
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        },
+                        credentials: "include"
+                    });
+                }
+
+                if (!response.ok) throw new Error("Failed to fetch note detail");
+
+                const note = await response.json();
+
+                document.getElementById("title").value = note.title;
+                document.getElementById("category").value = note.category;
+                document.getElementById("notes").value = note.note;
+                document.getElementById("createdAt").value = new Date(note.createdAt).toLocaleString();
+                document.getElementById("updatedAt").value = new Date(note.updatedAt).toLocaleString();
+
+            } catch (error) {
+                console.error("Error fetching note details:", error);
+                alert("Failed to load note details!");
+            }
+        }
+
+        fetchNoteDetail();
+    </script>
+
+
+</body>
+
+</html>

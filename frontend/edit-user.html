@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Edit User</title>
+</head>
+
+<body>
+    <div class="container">
+        <center>
+            <h1>Edit User</h1>
+        </center>
+        <form id="userForm">
+            <input type="hidden" id="userId" />
+
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required />
+            <br />
+
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required />
+            <br />
+
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" placeholder="Leave blank to keep current password" />
+            <br />
+
+            <button type="submit" class="button edit">Update User</button>
+            <button type="button" onclick="window.location.href='index.html'" class="button back">Back</button>
+        </form>
+    </div>
+
+    <script>
+        // const BASE_URL = "http://localhost:5000/api";
+        const BASE_URL = "https://notes-be-1013759214686.us-central1.run.app";
+
+        async function fetchUserDetail() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get("id");
+
+            if (!userId) {
+                alert("User ID is missing!");
+                window.location.href = "notes.html";
+                return;
+            }
+
+            document.getElementById("userId").value = userId;
+
+            const token = localStorage.getItem("accessToken");
+            if (!token) {
+                alert("Silakan login terlebih dahulu.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/users/${userId}`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    credentials: "include"
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert("Session expired, silakan login ulang.");
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("userId");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                if (!response.ok) throw new Error("Failed to fetch user");
+
+                const user = await response.json();
+                document.getElementById("name").value = user.name;
+                document.getElementById("email").value = user.email;
+
+            } catch (error) {
+                console.error("Error fetching user:", error);
+                alert("Failed to load user details!");
+            }
+        }
+
+        document.getElementById("userForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const userId = document.getElementById("userId").value;
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+
+            const updateData = { name, email };
+            if (password) updateData.password = password;
+
+            const token = localStorage.getItem("accessToken");
+            if (!token) {
+                alert("Silakan login terlebih dahulu.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/users/${userId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    credentials: "include",
+                    body: JSON.stringify(updateData),
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    alert("Session expired, silakan login ulang.");
+                    localStorage.removeItem("accessToken");
+                    localStorage.removeItem("userId");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                if (!response.ok) throw new Error("Failed to update user");
+
+                alert("User updated successfully!");
+                window.location.href = "notes.html";
+
+            } catch (error) {
+                console.error("Update error:", error);
+                alert("Failed to update user!");
+            }
+        });
+
+        fetchUserDetail();
+    </script>
+
+</body>
+
+</html>
