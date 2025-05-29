@@ -135,7 +135,7 @@
       const name = registerName.value;
       const email = registerEmail.value;
       const password = registerPassword.value;
-      const res = await fetch(`${BASE}/register`, {
+      const res = await fetch(`${BASE_URL}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
