@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import path from "path";
 
 const app = express();
-
+app.use(cookieParser());
 app.use(
   cors({
     origin: "https://h-08-451505.uc.r.appspot.com",
@@ -14,7 +14,7 @@ app.use(
   })
 );
 app.use(express.json());
-app.use(cookieParser());
+
 
 app.get("/", (req, res) => {
   res.send("hello world")
