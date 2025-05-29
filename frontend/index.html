@@ -100,32 +100,43 @@
       e.preventDefault();
       const email = loginEmail.value;
       const password = loginPassword.value;
-      const res = await fetch(`${BASE_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-        credentials: "include",
-      });
-      const j = await res.json();
 
-      if (res.ok) {
-        localStorage.setItem("accessToken", j.accessToken);
+      try {
+        const res = await fetch(`${BASE_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+          credentials: "include",
+        });
 
-        try {
-          const decoded = jwt_decode(j.accessToken);
-          if (decoded && decoded.id) {
-            localStorage.setItem("userId", decoded.id);
+        const contentType = res.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+          const j = await res.json();
+
+          if (res.ok) {
+            localStorage.setItem("accessToken", j.accessToken);
+
+            try {
+              const decoded = jwt_decode(j.accessToken);
+              localStorage.setItem("userId", decoded?.id || null);
+            } catch (decodeError) {
+              console.warn("Gagal decode accessToken", decodeError);
+              localStorage.setItem("userId", null);
+            }
+
+            location.href = "notes.html";
           } else {
-            localStorage.setItem("userId", null);
+            alert(j.message || "Login gagal. Periksa kembali email dan password.");
           }
-        } catch (error) {
-          console.warn("Gagal decode accessToken", error);
-          localStorage.setItem("userId", null);
+        } else {
+          const text = await res.text();
+          console.error("RESPON BUKAN JSON:", text);
+          alert("Terjadi kesalahan pada server. Coba lagi nanti.");
         }
-
-        location.href = "notes.html";
-      } else {
-        alert(j.message);
+      } catch (err) {
+        console.error("ERROR FETCH LOGIN:", err);
+        alert("Gagal terhubung ke server. Cek koneksi internet atau konfigurasi CORS.");
       }
     });
 
@@ -134,18 +145,37 @@
       const name = registerName.value;
       const email = registerEmail.value;
       const password = registerPassword.value;
-      const res = await fetch(`${BASE_URL}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      });
-      const j = await res.json();
-      if (res.ok) {
-        alert("Registrasi berhasil, silakan login");
-        toggleForms();
-      } else alert(j.message);
+
+      try {
+        const res = await fetch(`${BASE_URL}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password }),
+        });
+
+        const contentType = res.headers.get("content-type");
+
+        if (contentType && contentType.includes("application/json")) {
+          const j = await res.json();
+
+          if (res.ok) {
+            alert("Registrasi berhasil, silakan login.");
+            toggleForms();
+          } else {
+            alert(j.message || "Registrasi gagal. Coba lagi.");
+          }
+        } else {
+          const text = await res.text();
+          console.error("RESPON BUKAN JSON:", text);
+          alert("Terjadi kesalahan pada server. Coba lagi nanti.");
+        }
+      } catch (err) {
+        console.error("ERROR FETCH REGISTER:", err);
+        alert("Gagal terhubung ke server. Cek koneksi internet atau konfigurasi CORS.");
+      }
     });
   </script>
+
 </body>
 
 </html>
