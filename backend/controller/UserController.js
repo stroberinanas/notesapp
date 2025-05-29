@@ -603,7 +603,7 @@ export async function login(req, res) {
             secure: false // true jika HTTPS
         });
 
-        res.status(200).json({ accessToken });
+        res.status(200).json({ accessToken, refreshToken });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
